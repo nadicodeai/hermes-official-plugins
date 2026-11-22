@@ -58,5 +58,5 @@ def test_a_request_with_tools_still_mounts_the_helper(tmp_path):
     finally:
         client.close()
     seen = json.loads(report.read_text())
-    assert list(seen['mcp']['mcpServers']) == ['hermes']
+    assert list(seen['mcp']['mcpServers']) == ['nadia']
     assert seen['tools_json'] is True

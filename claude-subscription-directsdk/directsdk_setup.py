@@ -74,7 +74,7 @@ ALWAYS_QUIET = {"DISABLE_AUTOUPDATER": "1", "DISABLE_FEEDBACK_COMMAND": "1", "CL
 # An inherited host name (`sdk-py`, `claude-desktop`) would reach the child too, so it is overwritten.
 # Off the `sdk-*` names native offers its artifact tool and adds a scratchpad line to every request;
 # CLAUDE_CODE_DISABLE_ARTIFACT keeps the request identical to the `sdk-cli` one apart from the name.
-CALLER_IDENTITY = {"CLAUDE_CODE_ENTRYPOINT": "hermes-agent", "CLAUDE_CODE_DISABLE_ARTIFACT": "1"}
+CALLER_IDENTITY = {"CLAUDE_CODE_ENTRYPOINT": "nadia", "CLAUDE_CODE_DISABLE_ARTIFACT": "1"}
 _OFF = ("false", "0", "no", "off")
 # Inherited auth/backend overrides the request path refuses (directsdk.Client); discovery treats them alike.
 BACKEND_OVERRIDES = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "ANTHROPIC_FOUNDRY_API_KEY")

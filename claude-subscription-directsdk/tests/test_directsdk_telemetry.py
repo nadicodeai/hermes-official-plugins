@@ -101,15 +101,15 @@ def test_native_never_sends_its_own_session_title_request(profile, tmp_path, mon
 
 
 @pytest.mark.parametrize("child", ["discovery", "turn"])
-def test_native_requests_go_out_under_hermes_own_name(profile, tmp_path, child):
+def test_native_requests_go_out_under_nadias_own_name(profile, tmp_path, child):
     """anthropics/claude-code#97074: subscriptions meter the default `sdk-cli` name (and an inherited host's
-    `sdk-py`) about 2x heavier per token, so every child runs as `hermes-agent`, without the artifact
+    `sdk-py`) about 2x heavier per token, so every child runs as `nadia`, without the artifact
     scratchpad line a non-SDK name would add to every request."""
     inherited = {"CLAUDE_CODE_ENTRYPOINT": "sdk-py"}
     envs = (_discovery_envs(profile, tmp_path, **inherited) if child == "discovery"
             else [_turn_env(profile, tmp_path, **inherited)])
     for env in envs:
-        assert env["CLAUDE_CODE_ENTRYPOINT"] == "hermes-agent"
+        assert env["CLAUDE_CODE_ENTRYPOINT"] == "nadia"
         assert env["CLAUDE_CODE_DISABLE_ARTIFACT"] == "1"
 
 

@@ -234,7 +234,7 @@ def test_contentless_refusal_is_a_terminal_content_filter(tmp_path, details, ref
         if details:
             # A tool call the classifier cut off must not reach Hermes as tool_calls: Hermes would run it.
             tools=[{'type':'function','function':{'name':'list_things','description':'list','parameters':{'type':'object','properties':{}}}}]
-            tool_use=[{'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__hermes__list_things','input':{}}},
+            tool_use=[{'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__nadia__list_things','input':{}}},
                       {'type':'content_block_delta','index':0,'delta':{'type':'input_json_delta','partial_json':''}},
                       {'type':'content_block_stop','index':0}]
             Peer.extra = tool_use
@@ -360,7 +360,7 @@ def test_refusal_after_a_tool_call_reaches_the_user(tmp_path, stream, details, r
             self.send_response(200); self.send_header('Content-Type','text/event-stream'); self.end_headers()
             events = [
                 {'type':'message_start','message':{'id':'first','role':'assistant','model':'sonnet','content':[], 'usage':usage}},
-                {'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__hermes__list_things','input':{}}},
+                {'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__nadia__list_things','input':{}}},
                 {'type':'content_block_delta','index':0,'delta':{'type':'input_json_delta','partial_json':''}},
                 {'type':'content_block_stop','index':0},
                 {'type':'message_delta','delta':{'stop_reason':'refusal','stop_details':details},'usage':usage},
@@ -412,7 +412,7 @@ def test_empty_tool_input_completes_the_capture(tmp_path):
             self.send_response(200); self.send_header('Content-Type','text/event-stream'); self.end_headers()
             events = [
                 {'type':'message_start','message':{'id':'first','role':'assistant','model':'sonnet','content':[], 'usage':usage}},
-                {'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__hermes__list_things','input':{}}},
+                {'type':'content_block_start','index':0,'content_block':{'type':'tool_use','id':'toolu_1','name':'mcp__nadia__list_things','input':{}}},
                 {'type':'content_block_delta','index':0,'delta':{'type':'input_json_delta','partial_json':''}},
                 {'type':'content_block_stop','index':0},
                 {'type':'message_delta','delta':{'stop_reason':'tool_use'},'usage':usage},

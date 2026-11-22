@@ -76,7 +76,7 @@ NATIVE_ERROR_STATUS = {
 
 
 CARRIER = 'claude-subscription-directsdk-experimental.native_assistant'
-PREFIX = 'mcp__hermes__'
+PREFIX = 'mcp__nadia__'
 
 
 class Object(SimpleNamespace):
@@ -798,7 +798,7 @@ class Client:
                 mcp = {'mcpServers': {}}
                 if manifest:
                     (root / 'tools.json').write_text(json.dumps(manifest), encoding='utf-8')
-                    mcp = {'mcpServers': {'hermes': {'command': sys.executable, 'args': [str(Path(__file__).with_name('inert_mcp.py')), str(root / 'tools.json')]}}}
+                    mcp = {'mcpServers': {'nadia': {'command': sys.executable, 'args': [str(Path(__file__).with_name('inert_mcp.py')), str(root / 'tools.json')]}}}
                 env = _with_login_identity(_with_windows_essentials(dict(self.env if self.env is not None else os.environ)))
                 if self.env is None:
                     # Explicit env= is a controlled fixture and keeps its login; only Hermes' own env is filtered.

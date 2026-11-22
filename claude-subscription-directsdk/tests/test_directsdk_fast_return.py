@@ -138,7 +138,7 @@ def native_case(tmp_path, monkeypatch):
                 self.send_response(config.get('status', 200))
                 self.send_header('Content-Type', 'text/event-stream')
                 self.end_headers()
-                block = ({'type': 'tool_use', 'id': 'toolu_1', 'name': 'mcp__hermes__lookup',
+                block = ({'type': 'tool_use', 'id': 'toolu_1', 'name': 'mcp__nadia__lookup',
                           'input': {'q': 'fixture'}} if config.get('tool') else
                          {'type': 'text', 'text': 'FIRST'})
                 events = [

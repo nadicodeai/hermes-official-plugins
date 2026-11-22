@@ -44,7 +44,7 @@ assert sys.argv[sys.argv.index('--permission-mode')+1]=='dontAsk'
 assert sys.argv[sys.argv.index('--tools')+1]==''
 assert rows[-1]['type']=='user'
 assert 'metadata' not in wire
-blocks=[{'type':'thinking','thinking':'private','signature':'signed-test'}, {'type':'text','text':'hello\n'}, {'type':'tool_use','id':'toolu_test','name':os.environ.get('TOOL_NAME','mcp__hermes__probe'),'input':{'value':'x'}}]
+blocks=[{'type':'thinking','thinking':'private','signature':'signed-test'}, {'type':'text','text':'hello\n'}, {'type':'tool_use','id':'toolu_test','name':os.environ.get('TOOL_NAME','mcp__nadia__probe'),'input':{'value':'x'}}]
 if len(rows)>1:
  if rows[1]['message']['content'][0]['type']=='thinking':
   assert rows[1]['message']['content']==[dict(b, name=os.environ.get('REPLAY_NAME', b['name'])) if b['type']=='tool_use' else b for b in blocks]
@@ -179,7 +179,7 @@ class Contract(unittest.TestCase):
         Failing the whole request here left the model no way to correct itself."""
         with tempfile.TemporaryDirectory() as tmp:
             for native_name, host_name in (("mcp__fastmail__draft_email", "mcp__fastmail__draft_email"),
-                                           ("mcp__hermes__unlisted", "unlisted")):
+                                           ("mcp__nadia__unlisted", "unlisted")):
                 client = self.client(tmp, TOOL_NAME=native_name)
                 req = self.request()
                 result = client.chat.completions.create(**req)
@@ -198,7 +198,7 @@ class Contract(unittest.TestCase):
         # `terminal`). The host gets the tool, and the carried native block is rewritten so the next
         # request replays the name native was offered, not the slip it would keep imitating.
         with tempfile.TemporaryDirectory() as tmp:
-            client = self.client(tmp, TOOL_NAME="probe", REPLAY_NAME="mcp__hermes__probe")
+            client = self.client(tmp, TOOL_NAME="probe", REPLAY_NAME="mcp__nadia__probe")
             for streaming in (False, True):
                 req = self.request()
                 result = client.chat.completions.create(**req, stream=streaming)
@@ -210,7 +210,7 @@ class Contract(unittest.TestCase):
                     calls, details = result.choices[0].message.tool_calls, result.choices[0].message.reasoning_details
                 self.assertEqual([c.function.name for c in calls], ["probe"])
                 carried = [b["name"] for m in details[0]["messages"] for b in m["content"] if b["type"] == "tool_use"]
-                self.assertEqual(carried, ["mcp__hermes__probe"])
+                self.assertEqual(carried, ["mcp__nadia__probe"])
             msg = client.chat.completions.create(**req).choices[0].message.model_dump()
             msg["content"] = (msg.get("content") or "").strip()
             req["messages"] += [msg, {"role": "tool", "tool_call_id": "toolu_test", "content": "ok"}]
