@@ -1,6 +1,6 @@
 ---
 name: model-routing
-description: Before a big job: hand parts to subagents on cheaper models
+description: Before a big job, hand parts to subagents on cheaper models.
 version: 0.1.0
 author: Ziad Osama El-Boshy (ziadelboshy)
 license: MIT
