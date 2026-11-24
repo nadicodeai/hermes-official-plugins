@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 SKILL = "model-routing"
 # Shown in skill listings; the 60-character limit applies (same text as the SKILL.md frontmatter).
-SKILL_DESCRIPTION = "Route subagent tasks to the cheapest model that passes."
+SKILL_DESCRIPTION = "Before a big job: hand parts to subagents on cheaper models"
 SKILL_MD = Path(__file__).resolve().parent / "skills" / SKILL / "SKILL.md"
 
 

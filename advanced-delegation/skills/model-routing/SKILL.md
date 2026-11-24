@@ -1,6 +1,6 @@
 ---
 name: model-routing
-description: Route subagent tasks to the cheapest model that passes.
+description: Before a big job: hand parts to subagents on cheaper models
 version: 0.1.0
 author: Ziad Osama El-Boshy (ziadelboshy)
 license: MIT
@@ -22,10 +22,14 @@ routes mode (`delegation.backend: model_map`).
 
 - Work with 3+ independent parts, several files or areas, bulk repetitive edits, parallel
   research, or an implement -> test -> fix loop with mechanical parts.
+- 3+ documents or sources that each need reading and judging (contracts, tenders, reports):
+  hand each reading to a subagent, so the documents stay out of your own chat, and keep the
+  comparison and the answer yourself.
 - Any `delegate_task` call while Model routes mode is active, and any failed subagent task.
 - After the model routes change (re-sync the ladder).
 
-Don't use for: small work (roughly under 15 minutes or 1-2 files), tightly coupled changes,
+Don't use for: work one program does in a pass (write the program yourself), small work
+(roughly under 15 minutes or 1-2 files, unless it is the reading above), tightly coupled changes,
 work that needs the user's back-and-forth, or a split whose handoff costs more than the cheaper
 route saves. Subagents start blank and re-read files.
 
