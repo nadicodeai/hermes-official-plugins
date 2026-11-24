@@ -5,7 +5,7 @@ Stdlib only; runs on any Python 3.8+ on Linux, macOS and Windows. Routes are nev
 are your advanced-delegation ``model_map`` routes, read with ``sync-routes`` and stored in config
 order, which this skill treats as cheapest -> strongest.
 
-  route_ledger.py sync-routes [--from FILE|-] [--hermes PATH]
+  route_ledger.py sync-routes [--from FILE|-]
   route_ledger.py ladder
   route_ledger.py classes
   route_ledger.py suggest --class code-feature --difficulty 3 [--risk high]
@@ -15,9 +15,8 @@ order, which this skill treats as cheapest -> strongest.
 
 Files: the ledger (JSON Lines) is
 <HERMES_HOME>/plugin-data/advanced-delegation/routing-ledger.jsonl; the synced ladder is routes.json
-beside it. sync-routes reads the routes from <HERMES_HOME>/config.yaml when ruamel.yaml or PyYAML
-imports. With --hermes PATH, or when that file or a YAML library is missing, it asks that executable
-(else the one on PATH) instead, for at most SYNC_BUDGET seconds in total.
+beside it. sync-routes reads the routes from <HERMES_HOME>/config.yaml, which needs ruamel.yaml or
+PyYAML, or from --from FILE.
 """
 from __future__ import annotations
 
@@ -572,7 +571,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     sub.add_parser("ladder", help="print the synced routes and the difficulty mapping")
     sy = sub.add_parser("sync-routes", help="store your model_map routes (config order) as the ladder")
     sy.add_argument("--from", dest="source", help="read saved `config get --json` or `--show` output (- = stdin); UTF-8, or UTF-16 with a BOM")
-    sy.add_argument("--hermes", help="path to the hermes executable (default: read config.yaml, else from PATH)")
+    sy.add_argument("--hermes", help=argparse.SUPPRESS)  # the command-line executable to ask instead; Nadia ships none
 
     a = p.parse_args(argv)
     if a.cmd == "suggest":
