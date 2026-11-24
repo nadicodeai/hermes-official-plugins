@@ -188,6 +188,12 @@ class ModelMapDelegationProvider(DelegationProvider):
     def summary(self) -> str:
         return "The agent picks a named model route for each subagent."
 
+    def snapshot_settings(self, config: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Pin active routes, not the saved preset library, into the session database."""
+        from copy import deepcopy
+        settings = self.settings(config)
+        return deepcopy({key: settings[key] for key in ("options", "default") if key in settings})
+
     @property
     def route_keys(self) -> tuple[str, ...]:
         # Route keys beyond core's that settings editors may write and must keep; the Desktop route editor offers
@@ -222,7 +228,11 @@ class ModelMapDelegationProvider(DelegationProvider):
                 chosen = ""
         if not chosen:
             return {}  # the parent's route: delegation.model / delegation.provider are inactive in this mode
-        # Core already refused a chosen value outside the enum before calling us.
+        if chosen not in options:
+            # The enum is pinned when the session is built but settings are live: a config edit can
+            # remove an option a task still names. Fall back to the default route instead of raising.
+            _warn_once("%s.options has no %r any more; this task uses the default route.", SETTINGS_PATH, chosen)
+            return {}
         route = options[chosen]["route"]
         if options[chosen]["daybreak"]:
             route = _daybreak_route(chosen, route)
