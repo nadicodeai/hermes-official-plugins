@@ -7,6 +7,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -110,6 +111,14 @@ def test_body_sections_in_order_and_size():
         assert not re.search(rf"`{util}\b", body), util
 
 
+@pytest.mark.parametrize("path", [SKILL_MD, SKILL_DIR / "references" / "workflow.md"], ids=lambda p: p.name)
+def test_the_skill_never_names_the_runtime_or_a_hermes_command(path):
+    """An Agent repeats what she reads, and her terminal has no `hermes` command."""
+    for n, line in enumerate(_text(path).splitlines(), 1):
+        assert not re.search(r"\bHermes\b|\bNous\b|`hermes\b|hermes (?:config|delegation)", line), f"{path.name}:{n}"
+    assert advanced_delegation_plugin.SKILL_DESCRIPTION and "Hermes" not in advanced_delegation_plugin.SKILL_DESCRIPTION
+
+
 def test_every_referenced_file_ships():
     content = _text(SKILL_MD)
     for rel in set(re.findall(r"`((?:scripts|references)/[\w./-]+)`", content)):
@@ -145,12 +154,15 @@ def test_script_is_portable_stdlib():
     src = _text(SCRIPT)
     tmp_dir = "/" + "tmp"
     for bad in ("fcntl", "termios", "import pty", "os.fork", "os.killpg", "signal.SIG", tmp_dir, "/proc",
-                "/etc/", "yaml"):
+                "/etc/"):
         assert bad not in src, bad
     for line in src.splitlines():
         if re.search(r"\.(?:read_text|write_text|open)\(", line):
             assert "encoding=" in line, line
-    imports = {m.split(".")[0] for m in re.findall(r"^\s*(?:from|import) ([\w.]+)", src, re.M)}
+    # A YAML library is optional: imported only inside yaml_loader, so the script imports on the stdlib alone.
+    loader = src.split("def yaml_loader", 1)[1].split("\ndef ", 1)[0]
+    rest = src.replace(loader, "")
+    imports = {m.split(".")[0] for m in re.findall(r"^\s*(?:from|import) ([\w.]+)", rest, re.M)}
     stdlib = getattr(sys, "stdlib_module_names", None)
     if stdlib:
         assert imports - {"__future__"} <= set(stdlib), imports - set(stdlib)
@@ -267,7 +279,7 @@ def test_missing_ladder_tells_the_user_to_sync(ledger):
                  ["add", "--class", "summary", "--difficulty", "1", "--route", "fast", "--outcome", "pass",
                   "--task", "t", "--evidence", "e"]):
         done = _cli(*args)
-        assert done.returncode != 0 and "sync-routes" in done.stderr and "hermes delegation config" in done.stderr
+        assert done.returncode != 0 and "sync-routes" in done.stderr and "hermes" not in done.stderr
 
 
 def test_add_validates_route_and_records_the_model(rl, ledger):
@@ -396,6 +408,91 @@ def test_sync_with_no_routes_configured_says_so(rl, ledger, monkeypatch):
     with pytest.raises(SystemExit, match="no model_map routes are configured"):
         rl.cmd_sync_routes(SimpleNamespace(source=None, hermes="hermes"))
     assert not rl.routes_path().exists()
+
+
+def _write_config(delegation):
+    import hermes_yaml as yaml
+    path = Path(os.environ["HERMES_HOME"]) / "config.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump({"model": {"default": "parent-model"}, "delegation": delegation}),
+                    encoding="utf-8")
+    return path
+
+
+def test_sync_reads_the_profiles_own_config_without_a_hermes_executable(ledger, tmp_path):
+    config = _write_config({"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}})
+    empty = tmp_path / "no-commands"
+    empty.mkdir()
+    done = _cli("sync-routes", env={**os.environ, "PATH": str(empty)})
+    assert done.returncode == 0, done.stderr
+    assert done.stderr == ""
+    saved = json.loads(ledger.with_name("routes.json").read_text(encoding="utf-8"))
+    assert [r["name"] for r in saved["routes"]] == ["fast", "standard", "deep"]
+    assert [r["fingerprint"] for r in saved["routes"]] == EXPECTED
+    assert saved["source"] == str(config) and "***" not in json.dumps(saved)
+
+
+@pytest.mark.parametrize("delegation", [{}, {"backend": "default"}], ids=["unset", "default"])
+def test_sync_from_config_warns_when_the_mode_is_not_model_routes(ledger, tmp_path, delegation):
+    _write_config({**delegation, "backends": {"model_map": {"options": OPTIONS}}})
+    done = _cli("sync-routes", env={**os.environ, "PATH": str(tmp_path)})
+    assert done.returncode == 0, done.stderr
+    assert "delegation mode is 'default'" in done.stderr and "/delegation model_map" in done.stderr
+    assert "hermes" not in done.stderr
+
+
+def test_sync_from_config_with_no_routes_says_so(ledger, tmp_path):
+    _write_config({"backend": "model_map"})
+    done = _cli("sync-routes", env={**os.environ, "PATH": str(tmp_path)})
+    assert done.returncode != 0 and "no model_map routes are configured" in done.stderr
+    assert "hermes" not in done.stderr
+
+
+def _no_yaml(monkeypatch):
+    for name in ("ruamel", "ruamel.yaml", "ruamel.yaml.error", "yaml"):
+        monkeypatch.setitem(sys.modules, name, None)
+
+
+def test_without_a_yaml_library_sync_falls_back_to_hermes_on_path(rl, ledger, monkeypatch):
+    _write_config({"backend": "model_map", "backends": {"model_map": {"options": OPTIONS[:1]}}})
+    _no_yaml(monkeypatch)
+    assert rl.yaml_loader() is None
+    calls = []
+
+    def fake_run(cmd, timeout=None):
+        calls.append(cmd)
+        out = json.dumps(OPTIONS) if cmd[3:4] == ["delegation.backends.model_map.options"] else "model_map"
+        return SimpleNamespace(returncode=0, stdout=out, stderr="")
+
+    monkeypatch.setattr(rl.shutil, "which", lambda name: "/found/hermes" if name == "hermes" else None)
+    monkeypatch.setattr(rl, "_run", fake_run)
+    rl.cmd_sync_routes(SimpleNamespace(source=None, hermes=None))
+    assert calls and all(cmd[0] == "/found/hermes" for cmd in calls)
+    assert [r["fingerprint"] for r in rl.load_ladder()] == EXPECTED
+
+
+def test_without_a_yaml_library_or_hermes_sync_names_from_file(rl, ledger, monkeypatch):
+    _write_config({"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}})
+    _no_yaml(monkeypatch)
+    monkeypatch.setattr(rl.shutil, "which", lambda name: None)
+    with pytest.raises(SystemExit, match="--from FILE"):
+        rl.cmd_sync_routes(SimpleNamespace(source=None, hermes=None))
+    assert not rl.routes_path().exists()
+
+
+def test_from_and_hermes_still_win_over_the_config_file(rl, ledger, tmp_path, monkeypatch):
+    _write_config({"backend": "model_map", "backends": {"model_map": {"options": OPTIONS[:1]}}})
+    sample = tmp_path / "show.txt"
+    sample.write_text(SHOW_SAMPLE, encoding="utf-8")
+    rl.cmd_sync_routes(SimpleNamespace(source=str(sample), hermes=None))
+    saved = json.loads(rl.routes_path().read_text(encoding="utf-8"))
+    assert saved["source"] == f"--from {sample}" and len(saved["routes"]) == 3
+    monkeypatch.setattr(rl, "_run", lambda cmd, timeout=None: SimpleNamespace(
+        returncode=0, stdout=json.dumps(OPTIONS) if cmd[0] == "/given/hermes" and "--json" in cmd else "model_map",
+        stderr=""))
+    rl.cmd_sync_routes(SimpleNamespace(source=None, hermes="/given/hermes"))
+    saved = json.loads(rl.routes_path().read_text(encoding="utf-8"))
+    assert saved["source"].startswith("hermes config get") and len(saved["routes"]) == 3
 
 
 def test_hermes_that_is_missing_or_hangs_exits_2_cleanly(rl, ledger, monkeypatch, capsys):

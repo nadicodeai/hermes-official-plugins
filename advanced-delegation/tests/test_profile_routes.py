@@ -42,7 +42,7 @@ def test_profile_parameter_is_an_enum_of_the_listed_profiles_with_their_descript
     assert profile["type"] == "string"
     assert profile["enum"] == ["coder", "researcher"]
     first, *entries = profile["description"].split("\n")
-    assert "Hermes profiles" in first and "model" in first and "credentials" in first
+    assert "these Agents" in first and "Hermes" not in first and "model" in first and "credentials" in first
     assert entries == ["coder: Writes and refactors code; runs tests.",
                        "researcher: Web research and long-form summaries."]
     # Part of the cached prompt prefix: same config, same bytes.

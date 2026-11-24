@@ -15,7 +15,9 @@ order, which this skill treats as cheapest -> strongest.
 
 Files: the ledger (JSON Lines) is
 <HERMES_HOME>/plugin-data/advanced-delegation/routing-ledger.jsonl; the synced ladder is routes.json
-beside it. sync-routes runs `hermes` for at most SYNC_BUDGET seconds in total.
+beside it. sync-routes reads the routes from <HERMES_HOME>/config.yaml when ruamel.yaml or PyYAML
+imports. With --hermes PATH, or when that file or a YAML library is missing, it asks that executable
+(else the one on PATH) instead, for at most SYNC_BUDGET seconds in total.
 """
 from __future__ import annotations
 
@@ -55,6 +57,7 @@ CAUSES = ["model", "spec", "context", "env", "flaky"]
 WINDOW = 10        # recent records per (class, difficulty) that count
 DEMOTE_STREAK = 3  # straight first-try passes before a trial one route down
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")  # same rule as advanced-delegation's store
+_NOT_MODEL_MAP = "delegation mode is {!r}, so delegate_task offers no routes yet; switch with /delegation model_map"
 SYNC_BUDGET = 200  # seconds for all `hermes` calls of one sync-routes; SKILL.md's terminal timeout is above it
 
 
@@ -261,8 +264,7 @@ def read_from_hermes(hermes: str) -> tuple:
             found = parse_options_json(json.loads(got.stdout.strip() or "null"), warnings)
             mode = run("config", "get", "delegation.backend").stdout.strip()
             if mode and mode != "model_map":
-                warnings.append(f"delegation mode is {mode!r}, so delegate_task offers no routes yet; switch with "
-                                "`hermes config set delegation.backend model_map` (or /delegation model_map)")
+                warnings.append(_NOT_MODEL_MAP.format(mode))
             return found, "hermes config get delegation.backends.model_map.options --json", warnings
         except ValueError:
             warnings.clear()
@@ -273,8 +275,55 @@ def read_from_hermes(hermes: str) -> tuple:
     try:
         return parse_show(shown.stdout, warnings), "hermes delegation config --show", warnings
     except ValueError as exc:
-        raise LadderError(f"{exc}. Switch to Model routes (`hermes config set delegation.backend model_map`) "
-                          "or pass --from FILE")
+        raise LadderError(f"{exc}. Switch to Model routes (/delegation model_map) or pass --from FILE")
+
+
+def yaml_loader() -> Optional[tuple]:
+    """``(load, error type)`` from ruamel.yaml (the library Hermes itself reads config.yaml with), else PyYAML;
+    None when neither imports. Imported here so the script runs on the standard library alone."""
+    try:
+        from ruamel.yaml import YAML
+        from ruamel.yaml.error import YAMLError
+    except ImportError:
+        pass
+    else:
+        return YAML(typ="safe").load, YAMLError
+    try:
+        import yaml
+    except ImportError:
+        return None
+    return yaml.safe_load, yaml.YAMLError
+
+
+def _mapping(value: Any, key: str) -> Mapping[str, Any]:
+    child = value.get(key) if isinstance(value, Mapping) else None
+    return child if isinstance(child, Mapping) else {}
+
+
+def read_from_config(path: Path, loader: tuple) -> tuple:
+    """(routes, source, warnings) from the ``delegation`` section of the profile's own config.yaml."""
+    load, error = loader
+    try:
+        data = load(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise LadderError(f"could not read {path}: {exc.strerror or exc}")
+    except (error, UnicodeDecodeError) as exc:
+        raise LadderError(f"could not read {path}: {exc}")
+    section = _mapping(data, "delegation")
+    source = str(path)
+    options = _mapping(_mapping(section, "backends"), "model_map").get("options")
+    if options is None:
+        return [], source, []
+    warnings: List[str] = []
+    try:
+        found = parse_options_json(options, warnings)
+    except ValueError as exc:
+        raise LadderError(f"{path}: delegation.backends.model_map.options: {exc}")
+    backend = section.get("backend")
+    mode = backend.strip().lower() if isinstance(backend, str) and backend.strip() else "default"
+    if mode != "model_map":
+        warnings.append(_NOT_MODEL_MAP.format(mode))
+    return found, source, warnings
 
 
 def load_ladder(required: bool = True) -> List[Dict[str, str]]:
@@ -287,8 +336,7 @@ def load_ladder(required: bool = True) -> List[Dict[str, str]]:
     except (ValueError, AttributeError):
         raise LadderError(f"{path} is not a valid route ladder; run `route_ledger.py sync-routes` to rebuild it")
     if not routes and required:
-        raise LadderError(f"no route ladder at {path}. Define model_map routes (cheapest first) with "
-                          "`hermes delegation config`, then run `route_ledger.py sync-routes`")
+        raise LadderError(f"no route ladder at {path}. Run `route_ledger.py sync-routes`")
     return routes
 
 
@@ -310,14 +358,21 @@ def cmd_sync_routes(a) -> None:
         except ValueError as exc:
             raise LadderError(str(exc))
         source = f"--from {a.source}"
+    elif a.hermes:
+        routes, source, warnings = read_from_hermes(a.hermes)
     else:
-        hermes = a.hermes or shutil.which("hermes")
-        if not hermes:
-            raise LadderError("`hermes` is not on PATH; pass --hermes <path to the hermes executable> or --from FILE")
-        routes, source, warnings = read_from_hermes(hermes)
+        config = hermes_home() / "config.yaml"
+        loader = yaml_loader()
+        if loader and config.is_file():
+            routes, source, warnings = read_from_config(config, loader)
+        elif shutil.which("hermes"):
+            routes, source, warnings = read_from_hermes(shutil.which("hermes"))
+        else:
+            why = f"there is no {config}" if loader else "neither ruamel.yaml nor PyYAML can be imported"
+            raise LadderError(f"could not read the routes: {why}. Pass --from FILE with the saved routes")
     if not routes:
-        raise LadderError("no model_map routes are configured; add them (cheapest first) with "
-                          "`hermes delegation config`, then sync again")
+        raise LadderError("no model_map routes are configured for this Agent. The routes are the ones nadicode "
+                          "chose and cannot be added from here")
     path = routes_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"synced_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -438,7 +493,7 @@ def cmd_add(a, ladder: List[Dict[str, str]]) -> None:
     by_name = {r["name"]: r for r in ladder}
     if a.route not in by_name:
         raise LadderError(f"unknown route {a.route!r}; synced routes are: {', '.join(by_name)} "
-                          "(run `route_ledger.py sync-routes` if you changed them)")
+                          "(run `route_ledger.py sync-routes` if they changed)")
     if a.outcome == "fail" and not a.cause:
         raise SystemExit("error: --cause is required for a failed outcome: " + ", ".join(CAUSES))
     if a.attempt < 1:
@@ -517,7 +572,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     sub.add_parser("ladder", help="print the synced routes and the difficulty mapping")
     sy = sub.add_parser("sync-routes", help="store your model_map routes (config order) as the ladder")
     sy.add_argument("--from", dest="source", help="read saved `config get --json` or `--show` output (- = stdin); UTF-8, or UTF-16 with a BOM")
-    sy.add_argument("--hermes", help="path to the hermes executable (default: from PATH)")
+    sy.add_argument("--hermes", help="path to the hermes executable (default: read config.yaml, else from PATH)")
 
     a = p.parse_args(argv)
     if a.cmd == "suggest":

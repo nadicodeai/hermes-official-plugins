@@ -81,7 +81,7 @@ def test_post_save_rebuild_failure_reports_saved(state):
 
 def test_old_core_now_is_honest(state):
     text = slash.handle("preset work --now", session_key="s")
-    assert state == ["work"] and "newer Hermes" in text and "next session" in text
+    assert state == ["work"] and "newer Nadia" in text and "next session" in text
 
 
 def test_old_facade_no_apply_now_does_not_save_twice(state):
@@ -89,7 +89,7 @@ def test_old_facade_no_apply_now_does_not_save_twice(state):
         def set_global_backend(self, name, *, session_key=""):
             pytest.fail("old API should not be called after rejecting apply_now")
     text = slash.handle("preset work --now", session_key="s", api=Old())
-    assert state == ["work"] and "newer Hermes" in text
+    assert state == ["work"] and "newer Nadia" in text
 
 
 def test_store_refusal_does_not_request_rebuild(state, monkeypatch):

@@ -20,7 +20,7 @@ MODES: dict[str, str] = {"default": "Default", "model_map": "Model routes", "pro
 MODE_BLURBS: dict[str, str] = {
     "default": "every subagent uses delegation.model / delegation.provider (else your main model)",
     "model_map": "the agent picks a named model route for each subagent",
-    "profile_routes": "the agent runs a subagent as one of your Hermes profiles",
+    "profile_routes": "the agent runs a subagent as one of your Agents",
 }
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 #: Route keys the editor writes, in the order they are saved.

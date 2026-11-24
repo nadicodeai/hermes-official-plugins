@@ -123,13 +123,13 @@ def test_now_saves_and_asks_core_to_apply_it_to_this_chat(home, api):
     assert "deep (default)" in reply
 
 
-def test_now_on_a_core_without_apply_now_saves_and_says_it_needs_a_newer_hermes(home):
+def test_now_on_a_core_without_apply_now_saves_and_says_it_needs_a_newer_nadia(home):
     _write(home, {"backend": "default", "backends": {"model_map": {"options": ROUTES}}})
     api = OlderBackends(home)
     reply = str(_run("model_map --now", Ctx(ask=False, api=api), session_key="chat-7"))
     assert api.calls == [("model_map", "chat-7", False)]
     assert _saved(home)["backend"] == "model_map"
-    assert "newer Hermes" in reply and "next session" in reply
+    assert "newer Nadia" in reply and "next session" in reply
 
 
 def test_without_core_api_a_switch_writes_the_mode_itself_for_the_next_session(home):
@@ -139,11 +139,11 @@ def test_without_core_api_a_switch_writes_the_mode_itself_for_the_next_session(h
     assert "Model routes" in reply and "next session" in reply
 
 
-def test_without_core_api_now_saves_and_says_it_needs_a_newer_hermes(home):
+def test_without_core_api_now_saves_and_says_it_needs_a_newer_nadia(home):
     _write(home, {"backends": {"model_map": {"options": ROUTES}}})
     reply = str(_run("model_map --now"))
     assert _saved(home)["backend"] == "model_map"
-    assert "newer Hermes" in reply and "next session" in reply
+    assert "newer Nadia" in reply and "next session" in reply
 
 
 @pytest.mark.parametrize("word", ["2", "model_map", "models", "Model routes", "model-routes"])
@@ -208,10 +208,10 @@ def test_a_picker_that_returns_none_falls_back_to_the_text_listing(home, api):
 
 
 @pytest.mark.parametrize(("word", "mode_name"), [("model_map", "Model routes"), ("profiles", "Profile routes")])
-def test_switching_to_a_mode_with_nothing_configured_says_how_to_set_it_up(home, api, word, mode_name):
+def test_switching_to_a_mode_with_nothing_configured_says_nothing_is_set_up(home, api, word, mode_name):
     _write(home, {"backend": "default"})
     reply = str(_run(word, Ctx(ask=False, api=api)))
-    assert mode_name in reply and "hermes delegation config" in reply
+    assert mode_name in reply and "nothing set up" in reply and "hermes" not in reply.lower()
     assert _saved(home)["backend"] == "default" and api.calls == []
 
 

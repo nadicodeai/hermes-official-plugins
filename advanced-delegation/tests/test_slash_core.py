@@ -110,11 +110,11 @@ def test_a_managed_install_reports_cores_refusal(handler, monkeypatch):
 
 
 @before_apply_now
-def test_now_on_a_core_before_apply_now_saves_and_says_it_needs_a_newer_hermes(handler):
+def test_now_on_a_core_before_apply_now_saves_and_says_it_needs_a_newer_nadia(handler):
     fn, home = handler
     reply = _run(fn, "model_map --now")
     assert _saved(home) == "model_map"
-    assert "newer Hermes" in reply and "next session" in reply
+    assert "newer Nadia" in reply and "next session" in reply
 
 
 def _agent():

@@ -95,10 +95,10 @@ def _detail(mode: str, section: Mapping[str, Any]) -> str:
         return f"subagents use delegation.model: {model}"
     names = _ready(mode, section)
     if not names:
-        return "nothing set up yet (`hermes delegation config`)"
+        return "nothing set up yet"
     default = _mode_default(mode, section)
     shown = ", ".join(f"{n} (default)" if n == default else n for n in names)
-    noun = "route" if mode == "model_map" else "profile"
+    noun = "route" if mode == "model_map" else "Agent"
     return f"{len(names)} {noun}{'s' * (len(names) != 1)}: {shown}"
 
 
@@ -176,7 +176,7 @@ def _preset(words: list[str], section: Mapping[str, Any], session_key: str,
         active = store.active_preset(section)
         if not names:
             if not presets:
-                return "No model-route presets saved. Create one with `hermes delegation preset save NAME`."
+                return "No model-route presets saved."
             choices = [{"value": name, "label": name + (" (current)" if name == active else "")}
                        for name in presets]
             name = ask_choice("Choose a model-route preset:", choices) if ask_choice else None
@@ -210,15 +210,15 @@ def _preset(words: list[str], section: Mapping[str, Any], session_key: str,
     head = f"Preset {name!r} saved"
     if not now:
         return (f"{head} for the next session (/new). Add --now to rebuild this chat's tools. "
-                "Older Hermes versions that do not pin route settings may use the saved models "
-                "in existing chats before then; update Hermes for next-session isolation.")
+                "Older Nadia versions that do not pin route settings may use the saved models "
+                "in existing chats before then; update Nadia for next-session isolation.")
     if api is None:
-        return f"{head} for the next session (/new). Applying it now needs a newer Hermes."
+        return f"{head} for the next session (/new). Applying it now needs a newer Nadia."
     try:
         api.set_global_backend("model_map", session_key=session_key, apply_now=True)
     except TypeError as exc:
         if "apply_now" in str(exc) and ("unexpected keyword" in str(exc) or "keyword argument" in str(exc)):
-            return f"{head} for the next session (/new). Applying it now needs a newer Hermes."
+            return f"{head} for the next session (/new). Applying it now needs a newer Nadia."
         return f"{head}, but applying it now failed: {exc}"
     except (ValueError, PermissionError, RuntimeError, OSError) as exc:
         return f"{head}, but applying it now failed: {exc}"
@@ -243,8 +243,7 @@ def _save(mode: str, now: bool, api, session_key: str) -> bool:
 
 def _switch(mode: str, now: bool, section: Mapping[str, Any], saved: str, api, session_key: str) -> str:
     if not _ready(mode, section):
-        return (f"{store.mode_label(mode)} has nothing set up yet, so the agent would have nothing to pick. "
-                "Set it up with `hermes delegation config`, then switch.")
+        return f"{store.mode_label(mode)} has nothing set up yet, so the agent would have nothing to pick."
     head = f"Delegation mode: {store.mode_label(mode)}"
     if mode == saved and not now:
         return f"{head} is already saved. Add --now to apply it to this chat (rebuilds its tools once)."
@@ -258,6 +257,6 @@ def _switch(mode: str, now: bool, section: Mapping[str, Any], saved: str, api, s
         return (f"{head}, saved and applied to this chat: its tools are rebuilt for it at your next message "
                 f"(one prompt-cache break).{note}")
     if now:
-        return f"{head}, saved for the next session (/new). Applying it to this chat needs a newer Hermes.{note}"
+        return f"{head}, saved for the next session (/new). Applying it to this chat needs a newer Nadia.{note}"
     return (f"{head}, saved. It takes effect from the next session (/new); this chat's tools keep the previous "
             f"mode's choices until then (add --now to apply it here, which rebuilds this chat's tools once).{note}")

@@ -150,8 +150,8 @@ def _daybreak_route(name: str, route: Mapping[str, Any]) -> dict[str, Any]:
         from gateway.session_context import get_session_env
     except ImportError as exc:
         raise DelegationRouteError(
-            f"Option {name!r} needs Daybreak, which this Hermes does not support ({exc.name}). Update Hermes or "
-            f"pick another option.") from exc
+            f"Option {name!r} needs Daybreak, which this version of Nadia does not support ({exc.name}). Update "
+            f"Nadia or pick another option.") from exc
     source = session_source_for(get_session_env("HERMES_SESSION_PLATFORM", "") or None)
     if str(get_session_env("HERMES_CRON_SESSION", "") or "").strip().lower() in {"1", "true", "yes", "on"}:
         source = "cron"  # a cron job binds no platform, so the fallback would read it as ``cli``
@@ -213,7 +213,9 @@ class ModelMapDelegationProvider(DelegationProvider):
     def description(self, config: Mapping[str, Any]) -> str:
         if not configured_options(self.settings(config)):
             return ""
-        return "Each task may set `option` to run that subagent on one of the listed models."
+        return ("Each task may set `option` to run that subagent on one of the listed models. "
+                "Read the skill advanced-delegation:model-routing before you use it: it says when to hand work "
+                "to a subagent and which option fits each task.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)

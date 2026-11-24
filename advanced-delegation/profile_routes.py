@@ -82,14 +82,14 @@ class ProfilesDelegationProvider(DelegationProvider):
 
     @property
     def summary(self) -> str:
-        return "The agent runs a subagent as one of your Hermes profiles."
+        return "The agent runs a subagent as one of your Agents."
 
     def task_parameters(self, config: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         profiles = configured_profiles(self.settings(config))
         if not profiles:
             return {}
         lines = [
-            "Run this subagent as one of these Hermes profiles: it then uses that profile's own model, "
+            "Run this subagent as one of these Agents: it then uses that Agent's own model, "
             "skills, persona and credentials. Omit for the default subagent route.",
             *(f"{name}: {description}" if description else name for name, description in profiles),
         ]
@@ -99,7 +99,7 @@ class ProfilesDelegationProvider(DelegationProvider):
     def description(self, config: Mapping[str, Any]) -> str:
         if not configured_profiles(self.settings(config)):
             return ""
-        return "Each task may set `profile` to run that subagent as one of the listed Hermes profiles."
+        return "Each task may set `profile` to run that subagent as one of the listed Agents."
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         chosen = task.get(PARAMETER)

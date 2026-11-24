@@ -74,7 +74,7 @@ def test_hosted_now_on_a_core_before_apply_now_still_saves(hosted):
     # The older core's refusal of the keyword crosses the host wire as a TypeError; the plugin then saves.
     fn, home = hosted
     reply = _run(fn, "model_map --now")
-    assert "newer Hermes" in reply and _saved(home) == "model_map"
+    assert "newer Nadia" in reply and _saved(home) == "model_map"
 
 
 @pytest.mark.skipif(not APPLY_NOW, reason="core without set_global_backend(apply_now=)")

@@ -73,9 +73,12 @@ def test_settings_at_the_old_location_beside_core_keys_are_not_read(provider):
     assert provider.route_task({"goal": "g", "index": 0}, config) == {}
 
 
-def test_description_tells_the_model_it_may_set_option(provider):
+def test_description_tells_the_model_it_may_set_option_and_points_to_the_skill(provider):
     text = provider.description(_config(options=OPTIONS))
-    assert "`option`" in text and text.count(".") == 1
+    assert "`option`" in text
+    assert "Read the skill advanced-delegation:model-routing before you use it" in text
+    # Part of the cached prompt prefix: same config, same bytes.
+    assert provider.description(_config(options=OPTIONS)) == text
 
 
 def test_malformed_and_duplicate_options_are_skipped_with_one_warning_each_naming_the_new_path(provider, caplog):
