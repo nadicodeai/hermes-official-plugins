@@ -6,7 +6,9 @@
 Plus ``hermes delegation config`` (``cli.py``) to pick the mode and edit its routes, the
 ``/delegation`` slash command (``slash.py``) to switch modes in a chat, and the ``model-routing``
 skill (``skills/model-routing``, loaded as ``advanced-delegation:model-routing``), which guides the
-agent in picking a model route per task.
+agent in picking a model route per task, and a system prompt section (``advanced-delegation.routes``)
+that tells the agent, while Model routes mode has routes, to hand a big job's parts to the cheapest
+route that fits without being asked.
 
 The bundled ``default`` backend stays in Hermes core. This module only registers. ``plugin.yaml``
 declares ``requires_hermes: ">=0.22.5"``, which Hermes 0.22.0+ enforces before import; older cores
@@ -25,6 +27,33 @@ SKILL = "model-routing"
 # Shown in skill listings; the 60-character limit applies (same text as the SKILL.md frontmatter).
 SKILL_DESCRIPTION = "Before a big job, hand parts to subagents on cheaper models."
 SKILL_MD = Path(__file__).resolve().parent / "skills" / SKILL / "SKILL.md"
+SECTION = "advanced-delegation.routes"
+SECTION_MAX_CHARS = 900
+#: What the agent is told in every chat while Model routes mode has routes: without it she does the whole job on
+#: her own model, since nothing else she always reads says a cheaper route exists for part of it.
+ROUTES_GUIDANCE = (
+    "# Subagents on cheaper models\n\n"
+    "`delegate_task` can run each task on another model: the task names one in `option`. The options are listed "
+    "from the cheapest to the strongest, and each says what it costs and what it is for.\n\n"
+    "Everything you read or write yourself is paid at your own model's price. So do this without being asked:\n\n"
+    "- A job with three or more long documents or sources to read, or with several independent parts: hand each "
+    "part to a subagent on the first option whose description fits it. Keep the plan, the check of what comes "
+    "back and the answer for yourself.\n"
+    "- A small job, or one a short program does in a single pass: do it yourself."
+)
+
+
+def routes_guidance(_session_info) -> str:
+    """The system prompt section: ``ROUTES_GUIDANCE`` while this profile runs Model routes mode with at least one
+    route, else nothing. Rendered once per new session, like the tool list that carries the routes."""
+    from . import store
+    from .model_map import BACKEND, configured_options
+    section = store.delegation_section()
+    if store.current_mode(section) != BACKEND:
+        return ""
+    backends = section.get("backends")
+    settings = backends.get(BACKEND) if isinstance(backends, dict) else None
+    return ROUTES_GUIDANCE if isinstance(settings, dict) and configured_options(settings) else ""
 
 
 def register(ctx) -> None:
@@ -55,3 +84,8 @@ def register(ctx) -> None:
     except Exception as exc:
         logger.warning("advanced-delegation: could not register the %s skill (%s); the delegation modes "
                        "still work.", SKILL, exc)
+    try:
+        ctx.register_system_prompt_section(SECTION, routes_guidance, max_chars=SECTION_MAX_CHARS)
+    except Exception as exc:
+        logger.warning("advanced-delegation: could not register the %s prompt section (%s); the delegation "
+                       "modes still work.", SECTION, exc)

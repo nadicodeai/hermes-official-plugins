@@ -205,7 +205,8 @@ class ModelMapDelegationProvider(DelegationProvider):
         if not options:
             return {}
         lines = [
-            "Which configured model runs this subagent. Omit for the default subagent route.",
+            "Which configured model runs this subagent. The options are listed from the cheapest to the "
+            "strongest: take the first one whose description fits the task. Omit for the default subagent route.",
             *(f"{name}: {option['description']}" for name, option in options.items()),
         ]
         return {PARAMETER: {"type": "string", "enum": list(options), "description": "\n".join(lines)}}
@@ -213,11 +214,14 @@ class ModelMapDelegationProvider(DelegationProvider):
     def description(self, config: Mapping[str, Any]) -> str:
         if not configured_options(self.settings(config)):
             return ""
-        return ("Each task may set `option` to run that subagent on one of the listed models, some cheaper than "
-                "your own. Read the skill advanced-delegation:model-routing before you use it: it says when to hand "
-                "work to a subagent and which option fits each task. Hand work over when a job has three or more "
-                "documents or sources that each need reading and judging, or several independent parts; a small "
-                "job, or a job one program does in a pass, you do yourself.")
+        return ("Each task may set `option` to run that subagent on another model; the options are listed from the "
+                "cheapest to the strongest. Hand over a job's reading and its independent parts when it has three or "
+                "more long documents or sources, or several parts; a small job, or a job one program does in a pass, "
+                "you do yourself. Give each task the first option whose description fits it. In a task give the file "
+                "paths, never the files' text; say exactly what to report; and ask for the exact words of each "
+                "finding and where they are, so you can check a finding by searching the file, without reading it "
+                "all again. Keep the judgment, the check and the answer yourself. For a big job, or after a "
+                "subagent fails, read the skill advanced-delegation:model-routing.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)
