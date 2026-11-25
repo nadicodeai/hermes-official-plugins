@@ -100,10 +100,10 @@ ladder `routes.json` in the same folder.
    that passage); run the tests of code with `terminal`. Do not read the whole documents again:
    that pays for them a second time, at your price. A subagent's "done" is not a pass. Done when
    those findings are confirmed or corrected.
-6. **Handle a failure by its cause.** The model could not do a clearly briefed part -> the same
-   task one route up. The brief was unclear or missed context -> fix the brief, same route. The
-   route did not answer (a limit, an error) -> the next route, and tell the person when it keeps
-   failing. Done when every failed part has passed or is reported as blocked.
+6. **Handle a failure by its cause.** The task was refused, or its route did not answer (a limit,
+   an error) -> do that part yourself. The model could not do a clearly briefed part -> the same
+   task one route up. The brief was unclear or missed context -> fix the brief, same route. Done
+   when every failed part has passed or you did it yourself.
 7. **Answer yourself.** The comparison, the judgment and the reply are yours; say what you
    checked. Done when the person has the answer and knows what was checked.
 8. **For repeated work, record the results** with `add`, passes included, and ask `suggest`
