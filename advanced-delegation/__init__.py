@@ -40,13 +40,13 @@ CHEAPER_BY = 5
 #: tool's `option` as a condition, since a chat keeps these words after its tools are rebuilt on another mode.
 ROUTES_GUIDANCE = (
     "# Subagents on cheaper models\n\n"
-    "While `delegate_task` has an `option`, its values are other models, from the cheapest. What you read "
+    "While `delegate_task` has an `option`, its values are other models, listed from the cheapest. What you read "
     "yourself costs many times more than what the first one reads.\n\n"
-    "Without being asked, hand each part of a job a cheaper model can do to subagents on the first `option` that "
-    "fits: a lot of reading (ten long documents or more), lookups, the same step over many items. Each reports the "
-    "facts you list, with their exact words and where they are. You compare, judge, check what surprises you, and "
-    "answer. If an option is refused, do it yourself.\n\n"
-    "A small job, or exact work a short program does, you do yourself."
+    "So when a job means a lot of reading (ten long documents or more, or over fifty pages), do not read it "
+    "yourself. Without being asked, hand the reading to subagents on the first `option`: each reports the facts "
+    "you list, with their exact words and where they are. You compare, judge, check what surprises you, and "
+    "answer. If that option is refused, read it yourself.\n\n"
+    "A smaller job, or exact work a short program does, you do yourself."
 )
 
 
