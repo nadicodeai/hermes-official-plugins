@@ -34,6 +34,7 @@ def priced(monkeypatch):
         return SimpleNamespace(input_cost_per_million=Decimal(PRICES[model])) if model in PRICES else None
 
     monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
+    advanced_delegation_plugin._price_unknown_until.clear()
 
 
 def _told(tmp_path, monkeypatch, plugin_root, delegation, model="main-model", platform="cli"):
@@ -105,3 +106,19 @@ def test_a_model_its_gateway_cannot_price_is_priced_by_its_own_id(monkeypatch):
 
 def test_a_subagent_is_told_nothing_whatever_model_it_runs_on(tmp_path, monkeypatch, plugin_root):
     assert advanced_delegation_plugin.SECTION not in _told(tmp_path, monkeypatch, plugin_root, ROUTED, platform="subagent")
+
+
+def test_a_model_with_no_known_price_is_not_looked_up_again_at_once_and_the_agent_s_own_is_not_looked_up_at_all(monkeypatch):
+    from agent import usage_pricing
+    asked = []
+
+    def entry(model, provider=None, base_url=None, api_key=None):
+        asked.append((model, provider))
+        return None
+
+    monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
+    advanced_delegation_plugin._price_unknown_until.clear()
+
+    assert advanced_delegation_plugin._input_price("vendor/route-model", "a-gateway") is None
+    assert advanced_delegation_plugin._input_price("vendor/route-model", "a-gateway") is None
+    assert asked == [("vendor/route-model", "a-gateway"), ("vendor/route-model", "openrouter")]

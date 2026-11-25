@@ -19,6 +19,7 @@ and registers nothing (the skill included: it only makes sense with model routes
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -49,16 +50,22 @@ ROUTES_GUIDANCE = (
 )
 
 
+#: A model whose price could not be found is not looked up again for this long: the lookup can wait on a price
+#: catalog that does not answer, and it runs while a new chat's first message waits.
+PRICE_UNKNOWN_FOR_SECONDS = 600.0
+_price_unknown_until: dict[str, float] = {}
+
+
 def _input_price(model: str, provider: str = "", base_url: str = ""):
     """USD per million input tokens that core's price tables give ``model``, else ``None``. A gateway core cannot
     price by its name is priced by the model's own id, as the routers list it."""
-    if not model:
+    if not model or time.monotonic() < _price_unknown_until.get(model, 0.0):
         return None
     try:
         from agent.usage_pricing import get_pricing_entry
     except ImportError:
         return None
-    for known_by, at in ((provider, base_url), ("openrouter", "")):
+    for known_by, at in ((provider, base_url), ("openrouter", "")) if "/" in model else ((provider, base_url),):
         try:
             entry = get_pricing_entry(model, provider=known_by or None, base_url=at or None)
         except Exception:  # noqa: BLE001 - a price table that cannot be read leaves the price unknown
@@ -66,6 +73,7 @@ def _input_price(model: str, provider: str = "", base_url: str = ""):
         price = getattr(entry, "input_cost_per_million", None)
         if price:
             return price
+    _price_unknown_until[model] = time.monotonic() + PRICE_UNKNOWN_FOR_SECONDS
     return None
 
 
@@ -87,9 +95,11 @@ def routes_guidance(session_info) -> str:
     if not options:
         return ""
     first = next(iter(options.values()))["route"]
-    hers = _input_price(str(session_info.get("model") or ""), str(session_info.get("provider") or ""))
     cheapest = _input_price(str(first.get("model") or ""), str(first.get("provider") or ""), str(first.get("base_url") or ""))
-    if hers is None or cheapest is None or hers < CHEAPER_BY * cheapest:
+    if cheapest is None:
+        return ""
+    hers = _input_price(str(session_info.get("model") or ""), str(session_info.get("provider") or ""))
+    if hers is None or hers < CHEAPER_BY * cheapest:
         return ""
     return ROUTES_GUIDANCE
 
