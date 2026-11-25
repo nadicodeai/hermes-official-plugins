@@ -19,16 +19,17 @@ no tools; it uses `delegate_task` with the routes set up for you in Model routes
 
 ## When to Use
 
-- 3+ long documents or sources to read (contracts, tenders, reports, long threads): each reading
-  goes to a subagent, so the documents never enter your own chat, where you would pay for them at
-  your own price on every later step.
+- A lot of reading (about ten long documents or more, or over fifty pages: contracts, tenders,
+  reports, long threads): the reading goes to subagents on the first route, so the documents
+  never enter your own chat, where you would pay for them at your own price on every later step.
 - 3+ independent parts: several files or areas, bulk repetitive edits, parallel research, or an
   implement -> test -> fix loop with mechanical parts.
 - Any `delegate_task` call while Model routes mode is active, and any failed subagent task.
 
-Don't use for: a small job (one or two short files, one lookup), work one short program does in a
-pass (write the program yourself), tightly coupled changes, or work that needs the person's
-back-and-forth. A subagent starts blank, so a split pays only when the part is big enough.
+Don't use for: a small job (a few short files, one lookup), exact work on numbers or tables that
+a short program does (write the program yourself), tightly coupled changes, or work that needs
+the person's back-and-forth. A subagent starts blank and you pay to brief it and to read its
+answer, so a split pays only when the part is big enough.
 
 ## Prerequisites
 
@@ -84,9 +85,9 @@ ladder `routes.json` in the same folder.
    goes on the first route. Done when every part has a route, and none sits higher than its
    description asks.
 3. **Write each brief so the subagent needs nothing else**: the file paths (never the files'
-   text, which you would pay for twice), exactly what to report as a short list, "quote the exact
-   words of each finding and say where they are", and "report anything elsewhere in the file that
-   changes, limits or contradicts it". For code add the owned files, the acceptance test and "do
+   text, which you would pay for twice), the facts to report as a short list (a long report costs
+   you to read), "quote the exact words of each fact and say where they are", and "report
+   anything elsewhere in the file that changes, limits or contradicts it". For code add the owned files, the acceptance test and "do
    not commit" (see `references/workflow.md`). Done when a stranger could do the part from the
    brief alone.
 4. **Dispatch** the independent parts in one `delegate_task` call, each task's `option` set to

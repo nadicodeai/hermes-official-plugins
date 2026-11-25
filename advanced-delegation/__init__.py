@@ -35,10 +35,11 @@ ROUTES_GUIDANCE = (
     "# Subagents on cheaper models\n\n"
     "Your `delegate_task` options are other models, listed from the cheapest. What you read yourself costs many "
     "times more than what the first option reads.\n\n"
-    "So when a job has three or more long documents or sources (contracts, reports, long threads), do not open "
-    "them yourself. Without being asked, hand them to subagents: name the first `option` that fits on every task, "
-    "say in the task all they must report, and wait for the results. Then check their findings and answer.\n\n"
-    "A small job, or exact work on numbers or tables that a short program does, you do yourself."
+    "So when a job means a lot of reading (about ten long documents or more, or over fifty pages), do not read it "
+    "yourself. Without being asked, hand the reading to subagents on the first `option`: each reports the facts "
+    "you list, with their exact words and where they are. You compare, judge, check what surprises you, and "
+    "answer.\n\n"
+    "A smaller job, or exact work a short program does, you do yourself."
 )
 
 

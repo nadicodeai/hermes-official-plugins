@@ -79,9 +79,11 @@ def test_description_tells_the_model_it_may_set_option_and_points_to_the_skill(p
     assert "`option`" in text
     assert "listed from the cheapest to the strongest" in text
     assert "Name one on every task: the first whose description fits it" in text
-    assert "three or more long documents or sources" in text
+    assert "Reading files and reporting what they say goes on the first option" in text
+    assert "about ten long documents or more, or over fifty pages" in text
     assert "exact work a short program does, you do yourself" in text
     assert "the file paths, never the files' text" in text
+    assert "anything elsewhere in the file that changes or limits a fact is reported too" in text
     assert "do not do their work yourself" in text
     assert "read the skill advanced-delegation:model-routing" in text
     # Part of the cached prompt prefix: same config, same bytes.

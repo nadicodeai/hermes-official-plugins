@@ -45,12 +45,12 @@ def test_with_routes_the_agent_is_told_to_hand_big_jobs_to_the_cheapest_route_un
     sections = _rendered(tmp_path, monkeypatch, plugin_root,
                          {"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}})
     text = sections[advanced_delegation_plugin.SECTION]
-    assert "Without being asked, hand them to subagents" in text
+    assert "Without being asked, hand the reading to subagents on the first `option`" in text
     assert "listed from the cheapest" in text
-    assert "three or more long documents or sources" in text
-    assert "name the first `option` that fits on every task" in text
-    assert "wait for the results" in text
-    assert "exact work on numbers or tables that a short program does, you do yourself" in text
+    assert "about ten long documents or more, or over fifty pages" in text
+    assert "with their exact words and where they are" in text
+    assert "You compare, judge, check what surprises you, and answer." in text
+    assert "exact work a short program does, you do yourself" in text
     assert len(text) <= advanced_delegation_plugin.SECTION_MAX_CHARS
     assert not re.search(r"\bHermes\b|\bNous\b", text)
 
