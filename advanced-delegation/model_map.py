@@ -221,9 +221,10 @@ class ModelMapDelegationProvider(DelegationProvider):
                 "comes back. A small job, or exact work a short program does, you do yourself. Put everything in the "
                 "task when you send it: the file paths, never the files' text; the facts to report, as a short list; "
                 "that each comes with its exact words and where they are; and that anything elsewhere in the file "
-                "that changes or limits a fact is reported too. Do not do a task's work yourself once you have sent "
-                "it. Check the findings that surprise you by searching the file, then answer. For a big job, or "
-                "after a subagent fails, read the skill advanced-delegation:model-routing.")
+                "that changes or limits a fact is reported too. While a task runs, do not do its work yourself; once "
+                "it is refused, fails or does not answer, do that part yourself and send it to no other route. "
+                "Check the findings that surprise you by searching the file, then answer. For a big job, or after "
+                "a subagent fails, read the skill advanced-delegation:model-routing.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)
