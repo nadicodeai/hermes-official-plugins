@@ -21,7 +21,7 @@ OPTIONS = [
 ]
 
 
-def _rendered(tmp_path, monkeypatch, plugin_root, delegation):
+def _rendered(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"):
     from hermes_cli import plugins as plugins_mod
     from hermes_cli.plugins import PluginManager
 
@@ -36,7 +36,8 @@ def _rendered(tmp_path, monkeypatch, plugin_root, delegation):
     manager = PluginManager()
     manager.discover_and_load()
     try:
-        return {item.id: item.content for item in manager.render_system_prompt_sections({"profile_name": "default"})}
+        return {item.id: item.content
+                for item in manager.render_system_prompt_sections({"profile_name": "default", "model": model})}
     finally:
         manager.unload()
 
@@ -64,3 +65,8 @@ def test_with_routes_the_agent_is_told_to_hand_big_jobs_to_the_cheapest_route_un
 ], ids=["unset", "default mode", "no routes", "only a malformed route", "profile routes"])
 def test_without_model_routes_the_agent_is_told_nothing(tmp_path, monkeypatch, plugin_root, delegation):
     assert advanced_delegation_plugin.SECTION not in _rendered(tmp_path, monkeypatch, plugin_root, delegation)
+
+
+def test_an_agent_already_on_the_cheapest_route_s_model_is_told_nothing(tmp_path, monkeypatch, plugin_root):
+    delegation = {"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}}
+    assert advanced_delegation_plugin.SECTION not in _rendered(tmp_path, monkeypatch, plugin_root, delegation, model="Fast-Model")

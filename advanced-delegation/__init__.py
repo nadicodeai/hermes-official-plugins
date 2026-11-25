@@ -43,9 +43,10 @@ ROUTES_GUIDANCE = (
 )
 
 
-def routes_guidance(_session_info) -> str:
+def routes_guidance(session_info) -> str:
     """The system prompt section: ``ROUTES_GUIDANCE`` while this profile runs Model routes mode with at least one
-    route, else nothing. Rendered once per new session, like the tool list that carries the routes."""
+    route, else nothing. Rendered once per new session, like the tool list that carries the routes. An agent whose
+    own model is the first route's model is told nothing: that route reads at her own price."""
     from . import store
     from .model_map import BACKEND, configured_options
     section = store.delegation_section()
@@ -53,7 +54,12 @@ def routes_guidance(_session_info) -> str:
         return ""
     backends = section.get("backends")
     settings = backends.get(BACKEND) if isinstance(backends, dict) else None
-    return ROUTES_GUIDANCE if isinstance(settings, dict) and configured_options(settings) else ""
+    options = configured_options(settings) if isinstance(settings, dict) else {}
+    if not options:
+        return ""
+    cheapest = str(next(iter(options.values()))["route"].get("model") or "").strip().lower()
+    own = str(session_info.get("model") or "").strip().lower()
+    return "" if own and own == cheapest else ROUTES_GUIDANCE
 
 
 def register(ctx) -> None:
