@@ -216,16 +216,14 @@ class ModelMapDelegationProvider(DelegationProvider):
         if not configured_options(self.settings(config)):
             return ""
         return ("Each task may set `option` to run that subagent on another model; the options are listed from the "
-                "cheapest to the strongest. Name one on every task: the first whose description fits it. Reading files "
-                "and reporting what they say goes on the first option; the comparing and the judging you do yourself, "
-                "from what comes back. Hand over a job's reading when it is a lot (about ten long documents or more, "
-                "or over fifty pages), and its independent parts when it has several; a smaller job, or exact work a "
-                "short program does, you do yourself. Put everything in the task when you send it: the file paths, "
-                "never the files' text; the facts to report, as a short list; that each comes with its exact words "
-                "and where they are; and that anything elsewhere in the file that changes or limits a fact is "
-                "reported too. After you send the tasks, do not do their work yourself: end your turn, and the "
-                "results come back to you. Then check the findings that surprise you by searching the file, and "
-                "answer. For a big job, or after a subagent fails, read the skill advanced-delegation:model-routing.")
+                "cheapest to the strongest. Name one on every task: the first whose description fits it. Subagents "
+                "that read files for you read and report; the comparing and the judging you do yourself, from what "
+                "comes back. A small job, or exact work a short program does, you do yourself. Put everything in the "
+                "task when you send it: the file paths, never the files' text; the facts to report, as a short list; "
+                "that each comes with its exact words and where they are; and that anything elsewhere in the file "
+                "that changes or limits a fact is reported too. Do not do a task's work yourself once you have sent "
+                "it. Check the findings that surprise you by searching the file, then answer. For a big job, or "
+                "after a subagent fails, read the skill advanced-delegation:model-routing.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)

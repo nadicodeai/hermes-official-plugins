@@ -19,9 +19,10 @@ no tools; it uses `delegate_task` with the routes set up for you in Model routes
 
 ## When to Use
 
-- A lot of reading (about ten long documents or more, or over fifty pages: contracts, tenders,
-  reports, long threads): the reading goes to subagents on the first route, so the documents
-  never enter your own chat, where you would pay for them at your own price on every later step.
+- A lot of reading (ten long documents or more, or over fifty pages: contracts, tenders,
+  reports, long threads), while the cheapest route reads for much less than your own model: the
+  reading goes to subagents there, so the documents never enter your own chat, where you would
+  pay for them at your own price on every later step.
 - 3+ independent parts: several files or areas, bulk repetitive edits, parallel research, or an
   implement -> test -> fix loop with mechanical parts.
 - Any `delegate_task` call while Model routes mode is active, and any failed subagent task.
@@ -81,9 +82,9 @@ ladder `routes.json` in the same folder.
    parts: a subagent reads and reports, you judge. Done when you either do the job yourself
    (Don't use for, above) or have that list.
 2. **Give each part a route.** The routes are in the `option` of `delegate_task`, cheapest first.
-   Take the first whose description fits the part. Reading a document and reporting what it says
-   goes on the first route. Done when every part has a route, and none sits higher than its
-   description asks.
+   Take the first whose description fits the part: reading a document and reporting what it says
+   needs no more than the cheapest route that takes reading. Done when every part has a route,
+   and none sits higher than its description asks.
 3. **Write each brief so the subagent needs nothing else**: the file paths (never the files'
    text, which you would pay for twice), the facts to report as a short list (a long report costs
    you to read), "quote the exact words of each fact and say where they are", and "report

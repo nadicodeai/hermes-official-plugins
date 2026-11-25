@@ -1,10 +1,12 @@
-"""The ``advanced-delegation.routes`` system prompt section: what the agent is told in every chat while Model
-routes mode has routes, so she hands a big job's parts to a cheaper route without being asked."""
+"""The ``advanced-delegation.routes`` system prompt section: an agent is told to hand a lot of reading to the first
+route, unasked, only while Model routes mode has routes and that route is known to read at least ``CHEAPER_BY`` times
+cheaper than her own model."""
 
 from __future__ import annotations
 
-import re
 import shutil
+from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -19,9 +21,22 @@ OPTIONS = [
     {"name": "fast", "description": "Cheap; reading and lookups.", "provider": "openrouter", "model": "fast-model"},
     {"name": "deep", "description": "Dear; hard problems.", "provider": "openrouter", "model": "deep-model"},
 ]
+ROUTED = {"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}}
+PRICES = {"main-model": "2", "fast-model": "0.1", "deep-model": "3", "cheap-main": "0.3"}
 
 
-def _rendered(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"):
+@pytest.fixture(autouse=True)
+def priced(monkeypatch):
+    """Core's price table, answering for the models of these tests and nothing else."""
+    from agent import usage_pricing
+
+    def entry(model, provider=None, base_url=None, api_key=None):
+        return SimpleNamespace(input_cost_per_million=Decimal(PRICES[model])) if model in PRICES else None
+
+    monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
+
+
+def _told(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"):
     from hermes_cli import plugins as plugins_mod
     from hermes_cli.plugins import PluginManager
 
@@ -36,24 +51,17 @@ def _rendered(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"
     manager = PluginManager()
     manager.discover_and_load()
     try:
-        return {item.id: item.content
-                for item in manager.render_system_prompt_sections({"profile_name": "default", "model": model})}
+        rendered = manager.render_system_prompt_sections({"profile_name": "default", "model": model, "provider": "openrouter"})
+        return {item.id: item.content for item in rendered}
     finally:
         manager.unload()
 
 
-def test_with_routes_the_agent_is_told_to_hand_big_jobs_to_the_cheapest_route_unasked(tmp_path, monkeypatch, plugin_root):
-    sections = _rendered(tmp_path, monkeypatch, plugin_root,
-                         {"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}})
-    text = sections[advanced_delegation_plugin.SECTION]
-    assert "Without being asked, hand the reading to subagents on the first `option`" in text
-    assert "listed from the cheapest" in text
-    assert "about ten long documents or more, or over fifty pages" in text
-    assert "with their exact words and where they are" in text
-    assert "You compare, judge, check what surprises you, and answer." in text
-    assert "exact work a short program does, you do yourself" in text
-    assert len(text) <= advanced_delegation_plugin.SECTION_MAX_CHARS
-    assert not re.search(r"\bHermes\b|\bNous\b", text)
+def test_an_agent_whose_first_route_reads_far_cheaper_than_her_own_model_is_told_to_hand_reading_over(
+        tmp_path, monkeypatch, plugin_root):
+    told = _told(tmp_path, monkeypatch, plugin_root, ROUTED)
+    assert told[advanced_delegation_plugin.SECTION] == advanced_delegation_plugin.ROUTES_GUIDANCE
+    assert len(told[advanced_delegation_plugin.SECTION]) <= advanced_delegation_plugin.SECTION_MAX_CHARS
 
 
 @pytest.mark.parametrize("delegation", [
@@ -64,9 +72,31 @@ def test_with_routes_the_agent_is_told_to_hand_big_jobs_to_the_cheapest_route_un
     {"backend": "profile_routes", "backends": {"profile_routes": {"profiles": [{"name": "coder", "description": "Code."}]}}},
 ], ids=["unset", "default mode", "no routes", "only a malformed route", "profile routes"])
 def test_without_model_routes_the_agent_is_told_nothing(tmp_path, monkeypatch, plugin_root, delegation):
-    assert advanced_delegation_plugin.SECTION not in _rendered(tmp_path, monkeypatch, plugin_root, delegation)
+    assert advanced_delegation_plugin.SECTION not in _told(tmp_path, monkeypatch, plugin_root, delegation)
 
 
-def test_an_agent_already_on_the_cheapest_route_s_model_is_told_nothing(tmp_path, monkeypatch, plugin_root):
-    delegation = {"backend": "model_map", "backends": {"model_map": {"options": OPTIONS}}}
-    assert advanced_delegation_plugin.SECTION not in _rendered(tmp_path, monkeypatch, plugin_root, delegation, model="Fast-Model")
+@pytest.mark.parametrize(("model", "options"), [
+    ("fast-model", OPTIONS),
+    ("cheap-main", OPTIONS),
+    ("main-model", [OPTIONS[1], OPTIONS[0]]),
+    ("unpriced-main", OPTIONS),
+    ("main-model", [{**OPTIONS[0], "model": "unpriced-route"}, OPTIONS[1]]),
+], ids=["her own model is the first route's", "her own model is only three times dearer", "a dearer model put first",
+        "her own model has no known price", "the first route has no known price"])
+def test_an_agent_is_told_nothing_unless_the_first_route_is_known_to_read_far_cheaper(
+        tmp_path, monkeypatch, plugin_root, model, options):
+    delegation = {"backend": "model_map", "backends": {"model_map": {"options": options}}}
+    assert advanced_delegation_plugin.SECTION not in _told(tmp_path, monkeypatch, plugin_root, delegation, model=model)
+
+
+def test_a_model_its_gateway_cannot_price_is_priced_by_its_own_id(monkeypatch):
+    from agent import usage_pricing
+    asked = []
+
+    def entry(model, provider=None, base_url=None, api_key=None):
+        asked.append(provider)
+        return SimpleNamespace(input_cost_per_million=Decimal("2")) if provider == "openrouter" else None
+
+    monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
+    assert advanced_delegation_plugin._input_price("vendor/model", "a-gateway") == Decimal("2")
+    assert asked == ["a-gateway", "openrouter"]

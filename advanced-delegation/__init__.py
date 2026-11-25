@@ -28,25 +28,52 @@ SKILL = "model-routing"
 SKILL_DESCRIPTION = "Before a big job, hand parts to subagents on cheaper models."
 SKILL_MD = Path(__file__).resolve().parent / "skills" / SKILL / "SKILL.md"
 SECTION = "advanced-delegation.routes"
-SECTION_MAX_CHARS = 600
-#: What the agent is told in every chat while Model routes mode has routes: without it she does the whole job on
-#: her own model, since nothing else she always reads says a cheaper route exists for part of it.
+SECTION_MAX_CHARS = 640
+#: The agent is told to hand reading over unasked only while her own model's input price is at least this many
+#: times the first route's. Below that, briefing the subagents and reading their answers costs her more than the
+#: reading saves: measured on an agent at 2 USD per million input tokens, a route at 1 USD made the job dearer and
+#: a route at 0.10 USD made it cheaper.
+CHEAPER_BY = 5
+#: What that agent is told in every chat while Model routes mode has routes: without it she does the whole job on
+#: her own model, since nothing else she always reads says a cheaper route exists for part of it. It names the
+#: tool's `option` as a condition, since a chat keeps these words after its tools are rebuilt on another mode.
 ROUTES_GUIDANCE = (
     "# Subagents on cheaper models\n\n"
-    "Your `delegate_task` options are other models, listed from the cheapest. What you read yourself costs many "
-    "times more than what the first option reads.\n\n"
-    "So when a job means a lot of reading (about ten long documents or more, or over fifty pages), do not read it "
+    "While `delegate_task` has an `option`, its values are other models, listed from the cheapest. What you read "
+    "yourself costs many times more than what the first one reads.\n\n"
+    "So when a job means a lot of reading (ten long documents or more, or over fifty pages), do not read it "
     "yourself. Without being asked, hand the reading to subagents on the first `option`: each reports the facts "
     "you list, with their exact words and where they are. You compare, judge, check what surprises you, and "
-    "answer.\n\n"
+    "answer. If that option is refused, read it yourself.\n\n"
     "A smaller job, or exact work a short program does, you do yourself."
 )
 
 
+def _input_price(model: str, provider: str = "", base_url: str = ""):
+    """USD per million input tokens that core's price tables give ``model``, else ``None``. A gateway core cannot
+    price by its name is priced by the model's own id, as the routers list it."""
+    if not model:
+        return None
+    try:
+        from agent.usage_pricing import get_pricing_entry
+    except ImportError:
+        return None
+    for known_by, at in ((provider, base_url), ("openrouter", "")):
+        try:
+            entry = get_pricing_entry(model, provider=known_by or None, base_url=at or None)
+        except Exception:  # noqa: BLE001 - a price table that cannot be read leaves the price unknown
+            continue
+        price = getattr(entry, "input_cost_per_million", None)
+        if price:
+            return price
+    return None
+
+
 def routes_guidance(session_info) -> str:
-    """The system prompt section: ``ROUTES_GUIDANCE`` while this profile runs Model routes mode with at least one
-    route, else nothing. Rendered once per new session, like the tool list that carries the routes. An agent whose
-    own model is the first route's model is told nothing: that route reads at her own price."""
+    """The system prompt section: ``ROUTES_GUIDANCE`` while this profile runs Model routes mode and the first
+    route's model is known to read at least ``CHEAPER_BY`` times cheaper than the agent's own, else nothing: an
+    unknown price, or a first route that is not that much cheaper, is no reason to move her reading. Rendered once
+    per new session, like the tool list that carries the routes."""
     from . import store
     from .model_map import BACKEND, configured_options
     section = store.delegation_section()
@@ -57,9 +84,12 @@ def routes_guidance(session_info) -> str:
     options = configured_options(settings) if isinstance(settings, dict) else {}
     if not options:
         return ""
-    cheapest = str(next(iter(options.values()))["route"].get("model") or "").strip().lower()
-    own = str(session_info.get("model") or "").strip().lower()
-    return "" if own and own == cheapest else ROUTES_GUIDANCE
+    first = next(iter(options.values()))["route"]
+    hers = _input_price(str(session_info.get("model") or ""), str(session_info.get("provider") or ""))
+    cheapest = _input_price(str(first.get("model") or ""), str(first.get("provider") or ""), str(first.get("base_url") or ""))
+    if hers is None or cheapest is None or hers < CHEAPER_BY * cheapest:
+        return ""
+    return ROUTES_GUIDANCE
 
 
 def register(ctx) -> None:

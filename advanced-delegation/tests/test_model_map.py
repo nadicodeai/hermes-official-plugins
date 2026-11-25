@@ -45,8 +45,7 @@ def test_option_parameter_is_an_enum_of_names_with_their_descriptions(provider):
     option = params["option"]
     assert option["type"] == "string" and option["enum"] == ["fast", "deep", "local"]
     first, *entries = option["description"].split("\n")
-    assert "model" in first and "Set it on every task" in first and "listed from the cheapest to the strongest" in first
-    assert "A task without one runs on the default subagent route" in first
+    assert "model" in first and "default subagent route" in first
     assert entries == ["fast: Cheap and quick.", "deep: Slow and careful.", "local: Runs on this machine."]
     assert json.dumps(provider.task_parameters(config)) == json.dumps(params)  # cached prefix: same bytes
 
@@ -77,15 +76,9 @@ def test_settings_at_the_old_location_beside_core_keys_are_not_read(provider):
 def test_description_tells_the_model_it_may_set_option_and_points_to_the_skill(provider):
     text = provider.description(_config(options=OPTIONS))
     assert "`option`" in text
-    assert "listed from the cheapest to the strongest" in text
-    assert "Name one on every task: the first whose description fits it" in text
-    assert "Reading files and reporting what they say goes on the first option" in text
-    assert "about ten long documents or more, or over fifty pages" in text
-    assert "exact work a short program does, you do yourself" in text
-    assert "the file paths, never the files' text" in text
-    assert "anything elsewhere in the file that changes or limits a fact is reported too" in text
-    assert "do not do their work yourself" in text
-    assert "read the skill advanced-delegation:model-routing" in text
+    assert "advanced-delegation:model-routing" in text
+    # Core's own description says how results are delivered in this session; this one must not.
+    assert "end your turn" not in text and "come back" not in text
     # Part of the cached prompt prefix: same config, same bytes.
     assert provider.description(_config(options=OPTIONS)) == text
 
