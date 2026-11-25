@@ -77,6 +77,8 @@ def test_description_tells_the_model_it_may_set_option_and_points_to_the_skill(p
     text = provider.description(_config(options=OPTIONS))
     assert "`option`" in text
     assert "Read the skill advanced-delegation:model-routing before you use it" in text
+    assert "three or more documents or sources that each need reading and judging" in text
+    assert "a job one program does in a pass, you do yourself" in text
     # Part of the cached prompt prefix: same config, same bytes.
     assert provider.description(_config(options=OPTIONS)) == text
 

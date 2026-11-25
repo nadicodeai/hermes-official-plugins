@@ -213,9 +213,11 @@ class ModelMapDelegationProvider(DelegationProvider):
     def description(self, config: Mapping[str, Any]) -> str:
         if not configured_options(self.settings(config)):
             return ""
-        return ("Each task may set `option` to run that subagent on one of the listed models. "
-                "Read the skill advanced-delegation:model-routing before you use it: it says when to hand work "
-                "to a subagent and which option fits each task.")
+        return ("Each task may set `option` to run that subagent on one of the listed models, some cheaper than "
+                "your own. Read the skill advanced-delegation:model-routing before you use it: it says when to hand "
+                "work to a subagent and which option fits each task. Hand work over when a job has three or more "
+                "documents or sources that each need reading and judging, or several independent parts; a small "
+                "job, or a job one program does in a pass, you do yourself.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)
