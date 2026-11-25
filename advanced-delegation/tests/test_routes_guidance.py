@@ -36,7 +36,7 @@ def priced(monkeypatch):
     monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
 
 
-def _told(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"):
+def _told(tmp_path, monkeypatch, plugin_root, delegation, model="main-model", platform="cli"):
     from hermes_cli import plugins as plugins_mod
     from hermes_cli.plugins import PluginManager
 
@@ -51,7 +51,8 @@ def _told(tmp_path, monkeypatch, plugin_root, delegation, model="main-model"):
     manager = PluginManager()
     manager.discover_and_load()
     try:
-        rendered = manager.render_system_prompt_sections({"profile_name": "default", "model": model, "provider": "openrouter"})
+        rendered = manager.render_system_prompt_sections(
+            {"profile_name": "default", "model": model, "provider": "openrouter", "platform": platform})
         return {item.id: item.content for item in rendered}
     finally:
         manager.unload()
@@ -100,3 +101,7 @@ def test_a_model_its_gateway_cannot_price_is_priced_by_its_own_id(monkeypatch):
     monkeypatch.setattr(usage_pricing, "get_pricing_entry", entry)
     assert advanced_delegation_plugin._input_price("vendor/model", "a-gateway") == Decimal("2")
     assert asked == ["a-gateway", "openrouter"]
+
+
+def test_a_subagent_is_told_nothing_whatever_model_it_runs_on(tmp_path, monkeypatch, plugin_root):
+    assert advanced_delegation_plugin.SECTION not in _told(tmp_path, monkeypatch, plugin_root, ROUTED, platform="subagent")

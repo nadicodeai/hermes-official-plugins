@@ -74,6 +74,8 @@ def routes_guidance(session_info) -> str:
     route's model is known to read at least ``CHEAPER_BY`` times cheaper than the agent's own, else nothing: an
     unknown price, or a first route that is not that much cheaper, is no reason to move her reading. Rendered once
     per new session, like the tool list that carries the routes."""
+    if str(session_info.get("platform") or "") == "subagent":
+        return ""  # a subagent is the one sent to read, and has no delegate_task to hand it on with
     from . import store
     from .model_map import BACKEND, configured_options
     section = store.delegation_section()
