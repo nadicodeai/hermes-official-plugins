@@ -28,18 +28,17 @@ SKILL = "model-routing"
 SKILL_DESCRIPTION = "Before a big job, hand parts to subagents on cheaper models."
 SKILL_MD = Path(__file__).resolve().parent / "skills" / SKILL / "SKILL.md"
 SECTION = "advanced-delegation.routes"
-SECTION_MAX_CHARS = 900
+SECTION_MAX_CHARS = 600
 #: What the agent is told in every chat while Model routes mode has routes: without it she does the whole job on
 #: her own model, since nothing else she always reads says a cheaper route exists for part of it.
 ROUTES_GUIDANCE = (
     "# Subagents on cheaper models\n\n"
-    "`delegate_task` can run each task on another model: the task names one in `option`. The options are listed "
-    "from the cheapest to the strongest, and each says what it costs and what it is for.\n\n"
-    "Everything you read or write yourself is paid at your own model's price. So do this without being asked:\n\n"
-    "- A job with three or more long documents or sources to read, or with several independent parts: hand each "
-    "part to a subagent on the first option whose description fits it. Keep the plan, the check of what comes "
-    "back and the answer for yourself.\n"
-    "- A small job, or one a short program does in a single pass: do it yourself."
+    "Your `delegate_task` options are other models, listed from the cheapest. What you read yourself costs many "
+    "times more than what the first option reads.\n\n"
+    "So when a job has three or more long documents or sources (contracts, reports, long threads), do not open "
+    "them yourself. Without being asked, hand them to subagents: name the first `option` that fits on every task, "
+    "say in the task all they must report, and wait for the results. Then check their findings and answer.\n\n"
+    "A small job, or exact work on numbers or tables that a short program does, you do yourself."
 )
 
 

@@ -205,8 +205,9 @@ class ModelMapDelegationProvider(DelegationProvider):
         if not options:
             return {}
         lines = [
-            "Which configured model runs this subagent. The options are listed from the cheapest to the "
-            "strongest: take the first one whose description fits the task. Omit for the default subagent route.",
+            "Which configured model runs this subagent. Set it on every task. The options are listed from the "
+            "cheapest to the strongest: take the first one whose description fits the task. A task without one "
+            "runs on the default subagent route.",
             *(f"{name}: {option['description']}" for name, option in options.items()),
         ]
         return {PARAMETER: {"type": "string", "enum": list(options), "description": "\n".join(lines)}}
@@ -215,13 +216,14 @@ class ModelMapDelegationProvider(DelegationProvider):
         if not configured_options(self.settings(config)):
             return ""
         return ("Each task may set `option` to run that subagent on another model; the options are listed from the "
-                "cheapest to the strongest. Hand over a job's reading and its independent parts when it has three or "
-                "more long documents or sources, or several parts; a small job, or a job one program does in a pass, "
-                "you do yourself. Give each task the first option whose description fits it. In a task give the file "
-                "paths, never the files' text; say exactly what to report; and ask for the exact words of each "
-                "finding and where they are, so you can check a finding by searching the file, without reading it "
-                "all again. Keep the judgment, the check and the answer yourself. For a big job, or after a "
-                "subagent fails, read the skill advanced-delegation:model-routing.")
+                "cheapest to the strongest. Name one on every task: the first whose description fits it. Hand over a "
+                "job's reading when it has three or more long documents or sources, and its independent parts when it "
+                "has several; a small job, or exact work a short program does, you do yourself. Put everything in the "
+                "task when you send it: the file paths, never the files' text; exactly what to report; and that each "
+                "finding comes with its exact words and where they are, so you can check it by searching the file. "
+                "After you send the tasks, do not do their work yourself: finish what does not depend on them and end "
+                "your turn, and the results come back to you. Then check the findings that surprise you, and answer. "
+                "For a big job, or after a subagent fails, read the skill advanced-delegation:model-routing.")
 
     def route_task(self, task: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
         settings = self.settings(config)

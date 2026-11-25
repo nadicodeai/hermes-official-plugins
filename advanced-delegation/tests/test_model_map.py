@@ -45,7 +45,8 @@ def test_option_parameter_is_an_enum_of_names_with_their_descriptions(provider):
     option = params["option"]
     assert option["type"] == "string" and option["enum"] == ["fast", "deep", "local"]
     first, *entries = option["description"].split("\n")
-    assert "model" in first and "Omit" in first
+    assert "model" in first and "Set it on every task" in first and "listed from the cheapest to the strongest" in first
+    assert "A task without one runs on the default subagent route" in first
     assert entries == ["fast: Cheap and quick.", "deep: Slow and careful.", "local: Runs on this machine."]
     assert json.dumps(provider.task_parameters(config)) == json.dumps(params)  # cached prefix: same bytes
 
@@ -77,10 +78,11 @@ def test_description_tells_the_model_it_may_set_option_and_points_to_the_skill(p
     text = provider.description(_config(options=OPTIONS))
     assert "`option`" in text
     assert "listed from the cheapest to the strongest" in text
+    assert "Name one on every task: the first whose description fits it" in text
     assert "three or more long documents or sources" in text
-    assert "a job one program does in a pass, you do yourself" in text
-    assert "the first option whose description fits it" in text
-    assert "give the file paths, never the files' text" in text
+    assert "exact work a short program does, you do yourself" in text
+    assert "the file paths, never the files' text" in text
+    assert "do not do their work yourself" in text
     assert "read the skill advanced-delegation:model-routing" in text
     # Part of the cached prompt prefix: same config, same bytes.
     assert provider.description(_config(options=OPTIONS)) == text
